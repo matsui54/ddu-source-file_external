@@ -51,6 +51,7 @@ export class Source extends BaseSource<Params> {
           let items: Item<ActionData>[] = [];
           const paths = await getOutput([...args.sourceParams.cmd, root]);
           paths.map((path) => {
+            if (!path.length) return;
             items.push({
               word: relative(root, path),
               action: {
