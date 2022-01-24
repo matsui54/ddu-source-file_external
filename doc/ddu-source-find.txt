@@ -29,9 +29,9 @@ https://github.com/vim-denops/denops.vim
 EXAMPLES						*ddu-source-find-examples*
 
 >
-  call ddu#custom#patch_global('sourceParams', {
-        \ 'find': {'cmd': ['fd', '-H', '-E', '__pycache__', '-t', 'f']}
-        \ })
+	call ddu#custom#patch_global('sourceParams', {
+	      \ 'find': {'cmd': ['fd', '.', '-H', '-E', '__pycache__', '-t', 'f']}
+	      \ })
 <
 
 ==============================================================================
