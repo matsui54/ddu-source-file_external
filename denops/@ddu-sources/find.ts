@@ -26,7 +26,7 @@ async function getOutput(cmds: string[]): Promise<string[]> {
     proc.close();
 
     if (!status.success) {
-      console.error(stderr);
+      console.error(new TextDecoder().decode(stderr));
       return [];
     }
     return (new TextDecoder().decode(stdout)).split("\n");
@@ -43,13 +43,14 @@ export class Source extends BaseSource<Params> {
     denops: Denops;
     sourceParams: Params;
   }): ReadableStream<Item<ActionData>[]> {
+    const { denops, sourceParams } = args;
     return new ReadableStream({
       async start(controller) {
         const maxItems = 20000;
 
         const tree = async (root: string) => {
           let items: Item<ActionData>[] = [];
-          const paths = await getOutput([...args.sourceParams.cmd, root]);
+          const paths = await getOutput([...sourceParams.cmd, root]);
           paths.map((path) => {
             if (!path.length) return;
             items.push({
@@ -59,18 +60,16 @@ export class Source extends BaseSource<Params> {
               },
             });
             if (items.length > maxItems) {
-              // Update items
               controller.enqueue(items);
-              // Clear
               items = [];
             }
           });
           return items;
         };
 
-        let dir = args.sourceParams.path;
+        let dir = await fn.expand(denops, sourceParams.path) as string;
         if (dir == "") {
-          dir = await fn.getcwd(args.denops) as string;
+          dir = await fn.getcwd(denops) as string;
         }
 
         controller.enqueue(
