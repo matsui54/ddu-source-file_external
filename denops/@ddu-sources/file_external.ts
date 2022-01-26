@@ -11,12 +11,13 @@ type Params = {
   cmd: string[];
 };
 
-async function getOutput(cmds: string[]): Promise<string[]> {
+async function getOutput(cwd: string, cmds: string[]): Promise<string[]> {
   try {
     const proc = Deno.run({
       cmd: cmds,
       stdout: "piped",
       stderr: "piped",
+      cwd: cwd,
     });
     const [status, stdout, stderr] = await Promise.all([
       proc.status(),
@@ -50,11 +51,11 @@ export class Source extends BaseSource<Params> {
 
         const tree = async (root: string) => {
           let items: Item<ActionData>[] = [];
-          const paths = await getOutput([...sourceParams.cmd, root]);
+          const paths = await getOutput(root, [...sourceParams.cmd, root]);
           paths.map((path) => {
             if (!path.length) return;
             items.push({
-              word: relative(root, path),
+              word: relative(root, resolve(root, path)),
               action: {
                 path: path,
               },
