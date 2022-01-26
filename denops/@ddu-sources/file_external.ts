@@ -54,10 +54,11 @@ export class Source extends BaseSource<Params> {
           const paths = await getOutput(root, [...sourceParams.cmd, root]);
           paths.map((path) => {
             if (!path.length) return;
+            const fullPath = resolve(root, path);
             items.push({
-              word: relative(root, resolve(root, path)),
+              word: relative(root, fullPath),
               action: {
-                path: path,
+                path: fullPath,
               },
             });
             if (items.length > maxItems) {
