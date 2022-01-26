@@ -1,4 +1,4 @@
-# ddu-source-find
+# ddu-source-file_external
 File source using external command for ddu.vim
 
 # Example
