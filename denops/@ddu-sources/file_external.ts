@@ -1,39 +1,25 @@
 import {
   BaseSource,
   Item,
-} from "https://deno.land/x/ddu_vim@v0.4.0/types.ts#^";
-import { Denops, fn } from "https://deno.land/x/ddu_vim@v0.4.0/deps.ts#^";
-import { relative, resolve } from "https://deno.land/std@0.123.0/path/mod.ts";
-import { ActionData } from "https://deno.land/x/ddu_kind_file@v0.1.0/file.ts#^";
+} from "https://deno.land/x/ddu_vim@v0.12.2/types.ts";
+import { Denops, fn } from "https://deno.land/x/ddu_vim@v0.12.2/deps.ts";
+import { ActionData } from "https://deno.land/x/ddu_kind_file@v0.2.0/file.ts";
+import { relative, resolve } from "https://deno.land/std@0.125.0/path/mod.ts";
+import { BufReader } from "https://deno.land/std@0.125.0/io/buffer.ts";
 
 type Params = {
   path: string;
   cmd: string[];
 };
 
-async function getOutput(cwd: string, cmds: string[]): Promise<string[]> {
-  try {
-    const proc = Deno.run({
-      cmd: cmds,
-      stdout: "piped",
-      stderr: "piped",
-      cwd: cwd,
-    });
-    const [status, stdout, stderr] = await Promise.all([
-      proc.status(),
-      proc.output(),
-      proc.stderrOutput(),
-    ]);
-    proc.close();
-
-    if (!status.success) {
-      console.error(new TextDecoder().decode(stderr));
-      return [];
+async function* iterLine(reader: Deno.Reader): AsyncIterable<string> {
+  const buffered = new BufReader(reader);
+  while (true) {
+    const line = await buffered.readString("\n");
+    if (!line) {
+      break;
     }
-    return (new TextDecoder().decode(stdout)).split("\n");
-  } catch (e: unknown) {
-    console.error(e);
-    return [];
+    yield line;
   }
 }
 
@@ -51,21 +37,43 @@ export class Source extends BaseSource<Params> {
 
         const tree = async (root: string) => {
           let items: Item<ActionData>[] = [];
-          const paths = await getOutput(root, [...sourceParams.cmd, root]);
-          paths.map((path) => {
-            if (!path.length) return;
-            const fullPath = resolve(root, path);
-            items.push({
-              word: relative(root, fullPath),
-              action: {
-                path: fullPath,
-              },
+
+          try {
+            const proc = Deno.run({
+              cmd: [...sourceParams.cmd, root],
+              stdout: "piped",
+              stderr: "piped",
+              cwd: root,
             });
-            if (items.length > maxItems) {
-              controller.enqueue(items);
-              items = [];
+
+            for await (const line of iterLine(proc.stdout)) {
+              const path = line.trim();
+              if (!path.length) continue;
+              const fullPath = resolve(root, path);
+              items.push({
+                word: relative(root, fullPath),
+                action: {
+                  path: fullPath,
+                },
+              });
+              if (items.length > maxItems) {
+                controller.enqueue(items);
+                items = [];
+              }
             }
-          });
+
+            const [status, stderr] = await Promise.all([
+              proc.status(),
+              proc.stderrOutput(),
+            ]);
+            proc.close();
+
+            if (!status.success) {
+              console.error(new TextDecoder().decode(stderr));
+            }
+          } catch (e: unknown) {
+            console.error(e);
+          }
           return items;
         };
 
@@ -74,9 +82,11 @@ export class Source extends BaseSource<Params> {
           dir = await fn.getcwd(denops) as string;
         }
 
-        controller.enqueue(
-          await tree(resolve(dir, dir)),
-        );
+        if (args.sourceParams.cmd.length > 0) {
+          controller.enqueue(
+            await tree(resolve(dir, dir)),
+          );
+        }
 
         controller.close();
       },
