@@ -8,8 +8,9 @@ import { relative, resolve } from "https://deno.land/std@0.125.0/path/mod.ts";
 import { BufReader } from "https://deno.land/std@0.125.0/io/buffer.ts";
 
 type Params = {
-  path: string;
   cmd: string[];
+  path: string;
+  updateItems: number;
 };
 
 async function* iterLine(reader: Deno.Reader): AsyncIterable<string> {
@@ -33,10 +34,9 @@ export class Source extends BaseSource<Params> {
     const { denops, sourceParams } = args;
     return new ReadableStream({
       async start(controller) {
-        const maxItems = 20000;
-
         const tree = async (root: string) => {
           let items: Item<ActionData>[] = [];
+          const updateItems = sourceParams.updateItems;
 
           try {
             const proc = Deno.run({
@@ -56,7 +56,7 @@ export class Source extends BaseSource<Params> {
                   path: fullPath,
                 },
               });
-              if (items.length > maxItems) {
+              if (items.length >= updateItems) {
                 controller.enqueue(items);
                 items = [];
               }
@@ -95,8 +95,9 @@ export class Source extends BaseSource<Params> {
 
   params(): Params {
     return {
-      path: "",
       cmd: [],
+      path: "",
+      updateItems: 30000,
     };
   }
 }
