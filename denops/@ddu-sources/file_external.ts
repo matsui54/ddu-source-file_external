@@ -5,6 +5,8 @@ import { relative, resolve } from "https://deno.land/std@0.125.0/path/mod.ts";
 import { BufReader } from "https://deno.land/std@0.125.0/io/buffer.ts";
 import { abortable } from "https://deno.land/std@0.127.0/async/abortable.ts";
 
+const enqueueSize1st = 1000;
+
 type Params = {
   cmd: string[];
   path: string;
@@ -42,9 +44,10 @@ export class Source extends BaseSource<Params> {
           return;
         }
 
-        // controller.close();
         let items: Item<ActionData>[] = [];
-        const updateItems = sourceParams.updateItems;
+        const enqueueSize2nd = sourceParams.updateItems;
+        let enqueueSize = enqueueSize1st;
+        let numChunks = 0;
 
         const proc = Deno.run({
           cmd: [...sourceParams.cmd, root],
@@ -69,7 +72,11 @@ export class Source extends BaseSource<Params> {
                 path: fullPath,
               },
             });
-            if (items.length >= updateItems) {
+            if (items.length >= enqueueSize) {
+              numChunks++;
+              if (numChunks > 1) {
+                enqueueSize = enqueueSize2nd;
+              }
               controller.enqueue(items);
               items = [];
             }
@@ -106,7 +113,7 @@ export class Source extends BaseSource<Params> {
     return {
       cmd: [],
       path: "",
-      updateItems: 30000,
+      updateItems: 100000,
     };
   }
 }
