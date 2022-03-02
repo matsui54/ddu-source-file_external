@@ -35,7 +35,11 @@ export class Source extends BaseSource<Params> {
     const { denops, sourceParams } = args;
     return new ReadableStream({
       async start(controller) {
-        let root = await fn.expand(denops, sourceParams.path) as string;
+        let root = await fn.fnamemodify(
+          denops,
+          sourceParams.path,
+          ":p",
+        ) as string;
         if (root == "") {
           root = await fn.getcwd(denops) as string;
         }
