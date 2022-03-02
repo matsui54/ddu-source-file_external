@@ -50,7 +50,7 @@ export class Source extends BaseSource<Params> {
         let numChunks = 0;
 
         const proc = Deno.run({
-          cmd: [...sourceParams.cmd, root],
+          cmd: sourceParams.cmd,
           stdout: "piped",
           stderr: "piped",
           cwd: root,
