@@ -28,11 +28,34 @@ https://github.com/vim-denops/denops.vim
 ==============================================================================
 EXAMPLES				*ddu-source-file_external-examples*
 >
-	call ddu#custom#patch_global('sourceParams', {
-	\   'file_external': {
-	\     'cmd': ['fd', '.', '-H', '-E', '__pycache__', '-t', 'f']
-	\   },
-	\ })
+ " fd command
+ call ddu#custom#patch_global('sourceParams', {
+	 \   'file_external': {
+	 \     'cmd': ['fd', '.', '-H', '-E', '__pycache__', '-t', 'f']
+	 \   },
+	 \ })
+ " or git ls-files
+ call ddu#custom#patch_global('sourceParams', {
+	 \   'file_external': {
+	 \     'cmd': ['git', 'ls-files']
+	 \   },
+	 \ })
+
+ " directories source
+ call ddu#custom#alias('source', 'directory_rec', 'file_external')
+ call ddu#custom#patch_global('sourceParams', {
+	 \   'directory_rec': {
+	 \     'cmd': ['fd', '.', '-H', '-t', 'd']
+	 \   },
+	 \ })
+
+ " list directories from ghq list command
+ call ddu#custom#alias('source', 'ghq', 'file_external')
+ call ddu#custom#patch_global('sourceParams', {
+	 \   'ghq': {
+	 \     'cmd': ['ghq', 'list', '-p']
+	 \   },
+	 \ })
 <
 
 ==============================================================================
