@@ -1,5 +1,5 @@
-import { BaseSource, Item } from "https://deno.land/x/ddu_vim@v1.3.0/types.ts";
-import { Denops, fn } from "https://deno.land/x/ddu_vim@v1.3.0/deps.ts";
+import { BaseSource, Item } from "https://deno.land/x/ddu_vim@v1.4.0/types.ts";
+import { Denops, fn } from "https://deno.land/x/ddu_vim@v1.4.0/deps.ts";
 import { ActionData } from "https://deno.land/x/ddu_kind_file@v0.3.0/file.ts";
 import { relative, resolve } from "https://deno.land/std@0.132.0/path/mod.ts";
 import { BufReader } from "https://deno.land/std@0.132.0/io/buffer.ts";
