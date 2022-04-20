@@ -24,6 +24,15 @@ async function* iterLine(reader: Deno.Reader): AsyncIterable<string> {
   }
 }
 
+function run(options: Deno.RunOptions) {
+  try {
+    return Deno.run(options);
+  } catch (error) {
+    console.error(error);
+    return null;
+  }
+}
+
 export class Source extends BaseSource<Params> {
   kind = "file";
 
@@ -53,13 +62,17 @@ export class Source extends BaseSource<Params> {
         let enqueueSize = enqueueSize1st;
         let numChunks = 0;
 
-        const proc = Deno.run({
+        const proc = run({
           cmd: sourceParams.cmd,
           stdout: "piped",
           stderr: "piped",
           cwd: root,
         });
 
+        if (!proc) {
+          controller.close();
+          return;
+        }
         try {
           for await (
             const line of abortable(
