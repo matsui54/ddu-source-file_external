@@ -1,9 +1,9 @@
-import { BaseSource, Item } from "https://deno.land/x/ddu_vim@v1.6.0/types.ts";
-import { Denops, fn } from "https://deno.land/x/ddu_vim@v1.6.0/deps.ts";
+import { BaseSource, Item } from "https://deno.land/x/ddu_vim@v1.7.0/types.ts";
+import { Denops, fn } from "https://deno.land/x/ddu_vim@v1.7.0/deps.ts";
 import { ActionData } from "https://deno.land/x/ddu_kind_file@v0.3.0/file.ts";
-import { relative, resolve } from "https://deno.land/std@0.140.0/path/mod.ts";
-import { BufReader } from "https://deno.land/std@0.140.0/io/buffer.ts";
-import { abortable } from "https://deno.land/std@0.140.0/async/mod.ts";
+import { relative, resolve } from "https://deno.land/std@0.141.0/path/mod.ts";
+import { BufReader } from "https://deno.land/std@0.141.0/io/buffer.ts";
+import { abortable } from "https://deno.land/std@0.141.0/async/mod.ts";
 
 const enqueueSize1st = 1000;
 
