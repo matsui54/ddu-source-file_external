@@ -69,7 +69,7 @@ export class Source extends BaseSource<Params> {
           cwd: root,
         });
 
-        if (!proc) {
+        if (!proc || proc.stdout === null) {
           controller.close();
           return;
         }
