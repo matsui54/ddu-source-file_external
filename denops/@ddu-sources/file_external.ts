@@ -1,15 +1,14 @@
-import { BaseSource, Item } from "https://deno.land/x/ddu_vim@v1.13.0/types.ts";
+import { BaseSource, Item, SourceOptions } from "https://deno.land/x/ddu_vim@v1.13.0/types.ts";
 import { Denops, fn } from "https://deno.land/x/ddu_vim@v1.13.0/deps.ts";
 import { ActionData } from "https://deno.land/x/ddu_kind_file@v0.3.1/file.ts";
-import { relative, resolve } from "https://deno.land/std@0.161.0/path/mod.ts";
-import { BufReader } from "https://deno.land/std@0.161.0/io/buffer.ts";
-import { abortable } from "https://deno.land/std@0.161.0/async/mod.ts";
+import { relative, resolve } from "https://deno.land/std@0.162.0/path/mod.ts";
+import { BufReader } from "https://deno.land/std@0.162.0/io/buffer.ts";
+import { abortable } from "https://deno.land/std@0.162.0/async/mod.ts";
 
 const enqueueSize1st = 1000;
 
 type Params = {
   cmd: string[];
-  path: string;
   updateItems: number;
 };
 
@@ -38,15 +37,16 @@ export class Source extends BaseSource<Params> {
 
   gather(args: {
     denops: Denops;
+    sourceOptions: SourceOptions;
     sourceParams: Params;
   }): ReadableStream<Item<ActionData>[]> {
     const abortController = new AbortController();
-    const { denops, sourceParams } = args;
+    const { denops, sourceOptions, sourceParams } = args;
     return new ReadableStream({
       async start(controller) {
         let root = await fn.fnamemodify(
           denops,
-          sourceParams.path,
+          sourceOptions.path,
           ":p",
         ) as string;
         if (root == "") {
@@ -83,11 +83,20 @@ export class Source extends BaseSource<Params> {
             const path = line.trim();
             if (!path.length) continue;
             const fullPath = resolve(root, path);
+            const stat = await Deno.stat(fullPath);
             items.push({
-              word: relative(root, fullPath),
+              word: relative(root, fullPath) + (stat.isDirectory ? "/" : ""),
               action: {
                 path: fullPath,
+                isDirectory: stat.isDirectory,
+                isLink: stat.isSymlink,
               },
+              status: {
+                size: stat.size,
+                time: stat.mtime?.getTime(),
+              },
+              isTree: stat.isDirectory,
+              treePath: fullPath,
             });
             if (items.length >= enqueueSize) {
               numChunks++;
@@ -129,7 +138,6 @@ export class Source extends BaseSource<Params> {
   params(): Params {
     return {
       cmd: [],
-      path: "",
       updateItems: 100000,
     };
   }
