@@ -9,7 +9,6 @@ const enqueueSize1st = 1000;
 
 type Params = {
   cmd: string[];
-  path: string;
   updateItems: number;
 };
 
@@ -84,11 +83,20 @@ export class Source extends BaseSource<Params> {
             const path = line.trim();
             if (!path.length) continue;
             const fullPath = resolve(root, path);
+            const stat = await Deno.stat(fullPath);
             items.push({
-              word: relative(root, fullPath),
+              word: relative(root, fullPath) + (stat.isDirectory ? "/" : ""),
               action: {
                 path: fullPath,
+                isDirectory: stat.isDirectory,
+                isLink: stat.isSymlink,
               },
+              status: {
+                size: stat.size,
+                time: stat.mtime?.getTime(),
+              },
+              isTree: stat.isDirectory,
+              treePath: fullPath,
             });
             if (items.length >= enqueueSize) {
               numChunks++;
