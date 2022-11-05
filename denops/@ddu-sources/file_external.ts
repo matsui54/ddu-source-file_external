@@ -1,4 +1,4 @@
-import { BaseSource, Item } from "https://deno.land/x/ddu_vim@v1.13.0/types.ts";
+import { BaseSource, Item, SourceOptions } from "https://deno.land/x/ddu_vim@v1.13.0/types.ts";
 import { Denops, fn } from "https://deno.land/x/ddu_vim@v1.13.0/deps.ts";
 import { ActionData } from "https://deno.land/x/ddu_kind_file@v0.3.1/file.ts";
 import { relative, resolve } from "https://deno.land/std@0.161.0/path/mod.ts";
@@ -38,15 +38,16 @@ export class Source extends BaseSource<Params> {
 
   gather(args: {
     denops: Denops;
+    sourceOptions: SourceOptions;
     sourceParams: Params;
   }): ReadableStream<Item<ActionData>[]> {
     const abortController = new AbortController();
-    const { denops, sourceParams } = args;
+    const { denops, sourceOptions, sourceParams } = args;
     return new ReadableStream({
       async start(controller) {
         let root = await fn.fnamemodify(
           denops,
-          sourceParams.path,
+          sourceOptions.path,
           ":p",
         ) as string;
         if (root == "") {
@@ -129,7 +130,6 @@ export class Source extends BaseSource<Params> {
   params(): Params {
     return {
       cmd: [],
-      path: "",
       updateItems: 100000,
     };
   }

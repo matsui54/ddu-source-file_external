@@ -67,13 +67,6 @@ cmd	(string[])
 
 		Default: []
 
-					  *ddu-source-file_external-param-path*
-path	(string)
-		Path to execute commands.
-		If it is empty, |getcwd()| is used.
-
-		Default: ""
-
 				  *ddu-source-file_external-param-updateItems*
 updateItems	(number)
 		Update items threshold.
