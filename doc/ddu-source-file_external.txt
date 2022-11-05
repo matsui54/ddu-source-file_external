@@ -12,7 +12,7 @@ Params			|ddu-source-file_external-params|
 
 
 ==============================================================================
-INTRODUCTION				*ddu-source-file_external-introduction*
+INTRODUCTION			*ddu-source-file_external-introduction*
 
 This source collects paths by external command such as find, fd and rg.
 
@@ -61,13 +61,13 @@ EXAMPLES				*ddu-source-file_external-examples*
 ==============================================================================
 PARAMS					*ddu-source-file_external-params*
 
-					  *ddu-source-file_external-param-cmd*
+					*ddu-source-file_external-param-cmd*
 cmd	(string[])
 		Commands to execute for finding files.
 
 		Default: []
 
-j				  *ddu-source-file_external-param-updateItems*
+				  *ddu-source-file_external-param-updateItems*
 updateItems	(number)j
 		Update items threshold.
 
