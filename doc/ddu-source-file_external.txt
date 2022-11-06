@@ -68,7 +68,7 @@ cmd	(string[])
 		Default: []
 
 				  *ddu-source-file_external-param-updateItems*
-updateItems	(number)j
+updateItems	(number)
 		Update items threshold.
 
 		Default: 100000
