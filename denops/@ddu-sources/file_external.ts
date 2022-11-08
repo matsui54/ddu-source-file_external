@@ -82,7 +82,12 @@ export class Source extends BaseSource<Params> {
           ) {
             const path = line.trim();
             if (!path.length) continue;
+
             const fullPath = resolve(root, path);
+            if (!(await exists(fullPath))) {
+              continue;
+            }
+
             const stat = await Deno.stat(fullPath);
             items.push({
               word: relative(root, fullPath) + (stat.isDirectory ? "/" : ""),
@@ -142,3 +147,17 @@ export class Source extends BaseSource<Params> {
     };
   }
 }
+
+const exists = async (path: string) => {
+  // Note: Deno.stat() may be failed
+  try {
+    const stat = await Deno.stat(path);
+    if (stat.isDirectory || stat.isFile || stat.isSymlink) {
+      return true;
+    }
+  } catch (_: unknown) {
+    // Ignore stat exception
+  }
+
+  return false;
+};
