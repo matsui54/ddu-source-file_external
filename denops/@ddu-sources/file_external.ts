@@ -1,4 +1,8 @@
-import { BaseSource, Item, SourceOptions } from "https://deno.land/x/ddu_vim@v1.13.0/types.ts";
+import {
+  BaseSource,
+  Item,
+  SourceOptions,
+} from "https://deno.land/x/ddu_vim@v1.13.0/types.ts";
 import { Denops, fn } from "https://deno.land/x/ddu_vim@v1.13.0/deps.ts";
 import { ActionData } from "https://deno.land/x/ddu_kind_file@v0.3.1/file.ts";
 import { relative, resolve } from "https://deno.land/std@0.162.0/path/mod.ts";
@@ -30,6 +34,20 @@ function run(options: Deno.RunOptions) {
     console.error(error);
     return null;
   }
+}
+
+async function try_get_stat(path: string): Promise<Deno.FileInfo | null> {
+  // Note: Deno.stat() may fail
+  try {
+    const stat = await Deno.stat(path);
+    if (stat.isDirectory || stat.isFile || stat.isSymlink) {
+      return stat;
+    }
+  } catch (_: unknown) {
+    // Ignore stat exception
+  }
+
+  return null;
 }
 
 export class Source extends BaseSource<Params> {
@@ -84,11 +102,11 @@ export class Source extends BaseSource<Params> {
             if (!path.length) continue;
 
             const fullPath = resolve(root, path);
-            if (!(await exists(fullPath))) {
+            const stat = await try_get_stat(fullPath);
+            if (!stat) {
               continue;
             }
 
-            const stat = await Deno.stat(fullPath);
             items.push({
               word: relative(root, fullPath) + (stat.isDirectory ? "/" : ""),
               action: {
@@ -147,17 +165,3 @@ export class Source extends BaseSource<Params> {
     };
   }
 }
-
-const exists = async (path: string) => {
-  // Note: Deno.stat() may be failed
-  try {
-    const stat = await Deno.stat(path);
-    if (stat.isDirectory || stat.isFile || stat.isSymlink) {
-      return true;
-    }
-  } catch (_: unknown) {
-    // Ignore stat exception
-  }
-
-  return false;
-};
