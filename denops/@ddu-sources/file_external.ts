@@ -36,7 +36,7 @@ function run(options: Deno.RunOptions) {
   }
 }
 
-async function try_get_stat(path: string): Promise<Deno.FileInfo | null> {
+async function tryGetStat(path: string): Promise<Deno.FileInfo | null> {
   // Note: Deno.stat() may fail
   try {
     const stat = await Deno.stat(path);
@@ -102,7 +102,7 @@ export class Source extends BaseSource<Params> {
             if (!path.length) continue;
 
             const fullPath = resolve(root, path);
-            const stat = await try_get_stat(fullPath);
+            const stat = await tryGetStat(fullPath);
             if (!stat) {
               continue;
             }
