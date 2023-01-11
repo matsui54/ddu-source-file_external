@@ -6,7 +6,7 @@ import {
 import { Denops, fn } from "https://deno.land/x/ddu_vim@v2.1.0/deps.ts";
 import { ActionData } from "https://deno.land/x/ddu_kind_file@v0.3.2/file.ts";
 import { relative, resolve } from "https://deno.land/std@0.171.0/path/mod.ts";
-import { BufReader } from "https://deno.land/std@0.171.0/io/buffer.ts";
+import { BufReader } from "https://deno.land/std@0.171.0/io/buf_reader.ts";
 import { abortable } from "https://deno.land/std@0.171.0/async/mod.ts";
 
 const enqueueSize1st = 1000;
@@ -146,7 +146,10 @@ export class Source extends BaseSource<Params> {
           ]);
           proc.close();
           if (!status.success) {
-            console.error(new TextDecoder().decode(stderr));
+            const errMsg = new TextDecoder().decode(stderr);
+            if (errMsg.length > 0) {
+              console.error(errMsg);
+            }
           }
           controller.close();
         }
