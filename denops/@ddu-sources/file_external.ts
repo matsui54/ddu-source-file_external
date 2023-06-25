@@ -6,8 +6,8 @@ import {
 import { Denops, fn } from "https://deno.land/x/ddu_vim@v2.8.4/deps.ts";
 import { ActionData } from "https://deno.land/x/ddu_kind_file@v0.4.0/file.ts";
 import { relative, resolve } from "https://deno.land/std@0.187.0/path/mod.ts";
-import { BufReader } from "https://deno.land/std@0.187.0/io/buf_reader.ts";
 import { abortable } from "https://deno.land/std@0.187.0/async/mod.ts";
+import { TextLineStream } from "https://deno.land/std@0.187.0/streams/mod.ts";
 
 const enqueueSize1st = 1000;
 
@@ -16,23 +16,15 @@ type Params = {
   updateItems: number;
 };
 
-async function* iterLine(reader: Deno.Reader): AsyncIterable<string> {
-  const buffered = new BufReader(reader);
-  while (true) {
-    const line = await buffered.readString("\n");
-    if (!line) {
-      break;
-    }
-    yield line;
-  }
-}
+async function* iterLine(r: ReadableStream<Uint8Array>): AsyncIterable<string> {
+  const lines = r
+    .pipeThrough(new TextDecoderStream())
+    .pipeThrough(new TextLineStream());
 
-function run(options: Deno.RunOptions) {
-  try {
-    return Deno.run(options);
-  } catch (error) {
-    console.error(error);
-    return null;
+  for await (const line of lines) {
+    if ((line as string).length) {
+      yield line as string;
+    }
   }
 }
 
@@ -80,12 +72,15 @@ export class Source extends BaseSource<Params> {
         let enqueueSize = enqueueSize1st;
         let numChunks = 0;
 
-        const proc = run({
-          cmd: sourceParams.cmd,
-          stdout: "piped",
-          stderr: "piped",
-          cwd: root,
-        });
+        const proc = new Deno.Command(
+          sourceParams.cmd[0],
+          {
+            args: sourceParams.cmd.slice(1),
+            stdout: "piped",
+            stderr: "piped",
+            cwd: root,
+          },
+        ).spawn();
 
         if (!proc || proc.stdout === null) {
           controller.close();
@@ -140,18 +135,18 @@ export class Source extends BaseSource<Params> {
             console.error(e);
           }
         } finally {
-          const [status, stderr] = await Promise.all([
-            proc.status(),
-            proc.stderrOutput(),
-          ]);
-          proc.close();
+          const status = await proc.status;
           if (!status.success) {
-            const errMsg = new TextDecoder().decode(stderr);
-            if (errMsg.length > 0) {
-              console.error(errMsg);
+            for await (
+              const line of abortable(
+                iterLine(proc.stderr),
+                abortController.signal,
+              )
+            ) {
+              console.error(line);
             }
+            controller.close();
           }
-          controller.close();
         }
       },
 
