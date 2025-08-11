@@ -8,8 +8,8 @@ import { type ActionData } from "jsr:@shougo/ddu-kind-file@~0.9.0";
 import type { Denops } from "jsr:@denops/core@~7.0.0";
 import * as fn from "jsr:@denops/std@~7.6.0/function";
 
-import { relative } from "jsr:@std/path@~1.0.3/relative";
-import { resolve } from "jsr:@std/path@~1.0.3/resolve";
+import { relative } from "jsr:@std/path@~1.1.0/relative";
+import { resolve } from "jsr:@std/path@~1.1.0/resolve";
 import { abortable } from "jsr:@std/async@~1.0.4/abortable";
 import { TextLineStream } from "jsr:@std/streams@~1.0.3/text-line-stream";
 
