@@ -1,8 +1,8 @@
 import {
   type Item,
   type SourceOptions,
-} from "jsr:@shougo/ddu-vim@~10.1.0/types";
-import { BaseSource } from "jsr:@shougo/ddu-vim@~10.1.0/source";
+} from "jsr:@shougo/ddu-vim@~10.4.0/types";
+import { BaseSource } from "jsr:@shougo/ddu-vim@~10.4.0/source";
 import { type ActionData } from "jsr:@shougo/ddu-kind-file@~0.9.0";
 
 import type { Denops } from "jsr:@denops/core@~7.0.0";
