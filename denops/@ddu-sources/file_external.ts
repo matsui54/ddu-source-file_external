@@ -6,7 +6,7 @@ import { BaseSource } from "jsr:@shougo/ddu-vim@~10.1.0/source";
 import { type ActionData } from "jsr:@shougo/ddu-kind-file@~0.9.0";
 
 import type { Denops } from "jsr:@denops/core@~7.0.0";
-import * as fn from "jsr:@denops/std@~7.5.0/function";
+import * as fn from "jsr:@denops/std@~7.6.0/function";
 
 import { relative } from "jsr:@std/path@~1.0.3/relative";
 import { resolve } from "jsr:@std/path@~1.0.3/resolve";
