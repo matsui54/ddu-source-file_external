@@ -98,6 +98,10 @@ export class Source extends BaseSource<Params> {
             if (!path.length) continue;
 
             const fullPath = resolve(root, path);
+            const relToRoot = relative(root, fullPath);
+            if (relToRoot.startsWith("..")) {
+              continue;
+            }
             const stat = await tryGetStat(fullPath);
             if (!stat) {
               continue;
@@ -119,7 +123,7 @@ export class Source extends BaseSource<Params> {
             });
             if (items.length >= enqueueSize) {
               numChunks++;
-              if (numChunks > 1) {
+              if (numChunks >= 1) {
                 enqueueSize = enqueueSize2nd;
               }
               controller.enqueue(items);
@@ -130,7 +134,11 @@ export class Source extends BaseSource<Params> {
             controller.enqueue(items);
           }
         } catch (e: unknown) {
-          proc.kill("SIGTERM");
+          try {
+            proc.kill("SIGTERM");
+          } catch (_e) {
+            // Ignore
+          }
 
           if (e instanceof Error && e.name.includes("AbortReason")) {
             // Ignore AbortReason errors
