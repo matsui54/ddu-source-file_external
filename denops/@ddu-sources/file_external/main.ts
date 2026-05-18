@@ -73,6 +73,11 @@ export class Source extends BaseSource<Params> {
         let enqueueSize = enqueueSize1st;
         let numChunks = 0;
 
+        // Bounded concurrency for stat
+        const STAT_CONCURRENCY = 16;
+        type TaskRecord = { p: Promise<void>; done: boolean };
+        let pendingTasks: TaskRecord[] = [];
+
         const proc = new Deno.Command(
           sourceParams.cmd[0],
           {
@@ -98,46 +103,86 @@ export class Source extends BaseSource<Params> {
             if (!path.length) continue;
 
             const fullPath = resolve(root, path);
-            const relToRoot = relative(root, fullPath);
-            if (relToRoot.startsWith("..")) {
-              continue;
-            }
-            const stat = await tryGetStat(fullPath);
-            if (!stat) {
-              continue;
+
+            // Schedule stat task with bounded concurrency
+            const record: TaskRecord = { p: Promise.resolve(), done: false };
+            record.p = (async () => {
+              try {
+                if (abortController.signal.aborted) return;
+
+                const stat = await tryGetStat(fullPath);
+                if (!stat) return;
+
+                // Ensure fullPath is under root to avoid traversing outside
+                const relToRoot = relative(root, fullPath);
+                if (relToRoot.startsWith("..")) return;
+
+                items.push({
+                  word: relative(root, fullPath) +
+                    (stat.isDirectory ? "/" : ""),
+                  action: {
+                    path: fullPath,
+                    isDirectory: stat.isDirectory,
+                    isLink: stat.isSymlink,
+                  },
+                  status: {
+                    size: stat.size,
+                    time: stat.mtime?.getTime(),
+                  },
+                  isTree: stat.isDirectory,
+                  treePath: fullPath,
+                });
+
+                if (items.length >= enqueueSize) {
+                  numChunks++;
+                  // switch after first chunk
+                  if (numChunks >= 1) {
+                    enqueueSize = enqueueSize2nd;
+                  }
+                  controller.enqueue(items);
+                  items = [];
+                }
+              } finally {
+                record.done = true;
+              }
+            })();
+
+            pendingTasks.push(record);
+
+            if (pendingTasks.length >= STAT_CONCURRENCY) {
+              // Wait for any task to complete (ignore individual rejections)
+              try {
+                await Promise.race(pendingTasks.map((r) => r.p));
+              } catch (_e) {
+                // ignore
+              }
+              // remove completed tasks
+              pendingTasks = pendingTasks.filter((r) => !r.done);
             }
 
-            items.push({
-              word: relative(root, fullPath) + (stat.isDirectory ? "/" : ""),
-              action: {
-                path: fullPath,
-                isDirectory: stat.isDirectory,
-                isLink: stat.isSymlink,
-              },
-              status: {
-                size: stat.size,
-                time: stat.mtime?.getTime(),
-              },
-              isTree: stat.isDirectory,
-              treePath: fullPath,
-            });
-            if (items.length >= enqueueSize) {
-              numChunks++;
-              if (numChunks >= 1) {
-                enqueueSize = enqueueSize2nd;
-              }
-              controller.enqueue(items);
-              items = [];
-            }
+            if (abortController.signal.aborted) break;
           }
+
+          // Wait for remaining tasks
+          if (pendingTasks.length > 0) {
+            try {
+              await Promise.all(
+                pendingTasks.map((r) => r.p).map((p) => p.catch(() => {})),
+              );
+            } catch (_e) {
+              // ignore
+            }
+            pendingTasks = [];
+          }
+
           if (items.length) {
             controller.enqueue(items);
           }
         } catch (e: unknown) {
           try {
             proc.kill("SIGTERM");
-          } catch (_e) {
-            // Ignore
+          } catch (_: unknown) {
+            // ignore kill errors (platform differences)
           }
 
           if (e instanceof Error && e.name.includes("AbortReason")) {
