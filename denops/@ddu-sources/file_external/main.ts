@@ -110,16 +110,18 @@ export class Source extends BaseSource<Params> {
               try {
                 if (abortController.signal.aborted) return;
 
-                const stat = await tryGetStat(fullPath);
-                if (!stat) return;
-
-                // Ensure fullPath is under root to avoid traversing outside
+                // Reject paths that escape the root directory.
                 const relToRoot = relative(root, fullPath);
                 if (relToRoot.startsWith("..")) return;
 
+                const stat = await tryGetStat(fullPath);
+                if (!stat) return;
+
+                const relPath = relative(root, fullPath);
+                const word = relPath + (stat.isDirectory ? "/" : "");
+
                 items.push({
-                  word: relative(root, fullPath) +
-                    (stat.isDirectory ? "/" : ""),
+                  word,
                   action: {
                     path: fullPath,
                     isDirectory: stat.isDirectory,
@@ -136,7 +138,7 @@ export class Source extends BaseSource<Params> {
                 if (items.length >= enqueueSize) {
                   numChunks++;
                   // switch after first chunk
-                  if (numChunks >= 1) {
+                  if (numChunks === 1) {
                     enqueueSize = enqueueSize2nd;
                   }
                   controller.enqueue(items);
